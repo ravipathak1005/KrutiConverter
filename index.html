@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1D2660">
+<meta name="description" content="Convert Hindi text and Word/Excel files between Kruti Dev and Unicode, on your device.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kruti↔Unicode">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Kruti Dev ↔ Unicode Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;700&family=Tiro+Devanagari+Hindi&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1F3EE; --surface:#FFFFFF; --ink:#1D2660; --muted:#5C6577; --line:#CBD1C6;
+  --tape:#B8322A; --tape-ink:#FFFFFF; --manila:#E8C872; --manila-soft:#F7EBC6; --ok:#2F6B3A;
+  --ui:"Mukta","Utsaah","Nirmala UI","Mangal",system-ui,sans-serif;
+  --deva:"Utsaah","Tiro Devanagari Hindi","Mukta","Nirmala UI","Mangal",serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#14182B; --surface:#1B2038; --ink:#E7E9F4; --muted:#9AA1B5; --line:#2E3554;
+    --tape:#E0624F; --tape-ink:#14182B; --manila:#C9A64A; --manila-soft:#2A2A2E; --ok:#7DC08A;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#14182B; --surface:#1B2038; --ink:#E7E9F4; --muted:#9AA1B5; --line:#2E3554;
+  --tape:#E0624F; --tape-ink:#14182B; --manila:#C9A64A; --manila-soft:#2A2A2E; --ok:#7DC08A;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:17px;line-height:1.5;-webkit-text-size-adjust:100%}
+main{max-width:760px;margin:0 auto;padding:28px 18px 48px}
+
+header{margin-bottom:26px}
+.specimen{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:0 0 10px}
+.specimen .key{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:clamp(28px,7vw,44px);color:var(--muted);letter-spacing:.02em}
+.specimen .arrow{font-size:clamp(20px,5vw,30px);color:var(--tape)}
+.specimen .glyph{font-family:"Tiro Devanagari Hindi",var(--deva);font-size:clamp(40px,11vw,68px);line-height:1}
+h1{font-size:clamp(24px,5.4vw,32px);font-weight:700;line-height:1.15;margin:0 0 6px;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:0;max-width:60ch}
+
+.controls{display:grid;gap:14px;margin-bottom:22px}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--ink);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{all:unset;cursor:pointer;text-align:center;padding:11px 8px;font:500 15px/1.25 var(--ui);color:var(--ink)}
+.seg button+button{border-left:1.5px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.seg button:focus-visible{outline:3px solid var(--manila);outline-offset:-3px}
+.dir-label{font-size:14px;color:var(--muted);margin:0 0 6px}
+
+.opts{display:grid;grid-template-columns:1.4fr .8fr;gap:10px 12px;align-items:end}
+.opts label{display:grid;gap:4px;font-size:14px;color:var(--muted)}
+.opts input[type=text],.opts input[type=number]{font:16px var(--ui);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%}
+.opts input:focus-visible,textarea:focus-visible{outline:3px solid var(--manila);outline-offset:1px;border-color:var(--ink)}
+.check{grid-column:1/-1;display:flex!important;align-items:center;gap:10px;color:var(--ink)!important;font-size:15px!important}
+.check input{width:20px;height:20px;accent-color:var(--ink)}
+
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin:4px 0 18px}
+.tabs button{all:unset;cursor:pointer;padding:10px 0;font:600 16px var(--ui);color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--ink);border-color:var(--tape)}
+.tabs button:focus-visible{outline:3px solid var(--manila);outline-offset:2px}
+
+.panes{display:grid;gap:14px}
+@media (min-width:720px){ .panes{grid-template-columns:1fr 1fr} }
+.pane{display:grid;gap:6px}
+.pane-head{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--muted)}
+textarea{width:100%;min-height:200px;resize:vertical;font:18px/1.6 var(--deva);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px}
+@media (max-width:719px){ textarea{min-height:140px} .row .btn{flex:1 1 auto} }
+textarea.latin{font:16px/1.6 ui-monospace,"Cascadia Mono",Consolas,monospace}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;border-radius:10px;font:600 16px var(--ui);background:var(--tape);color:var(--tape-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn:focus-visible{outline:3px solid var(--manila);outline-offset:2px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.hint{font-size:14px;color:var(--muted);margin:10px 0 0}
+
+.drop{display:grid;place-items:center;text-align:center;gap:6px;border:2px dashed var(--ink);border-radius:14px;background:var(--manila-soft);padding:34px 16px;cursor:pointer}
+.drop.over{background:var(--manila)}
+.drop:focus-visible{outline:3px solid var(--tape);outline-offset:3px}
+.drop strong{font-size:18px}
+.drop span{font-size:14px;color:var(--muted)}
+.fileinfo{display:none;margin-top:14px;padding:12px 14px;border-left:4px solid var(--manila);background:var(--surface);border-radius:0 10px 10px 0}
+.fileinfo.show{display:block}
+.fileinfo .name{font-weight:600;word-break:break-all}
+.fileinfo .meta{font-size:14px;color:var(--muted)}
+.status{min-height:24px;margin-top:12px;font-size:15px}
+.status.err{color:var(--tape)} .status.ok{color:var(--ok)}
+.notes{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);font-size:14.5px;color:var(--muted)}
+.notes p{margin:0 0 8px;max-width:68ch}
+[hidden]{display:none!important}
+.vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0)}
+.drop:focus-within{outline:3px solid var(--tape);outline-offset:3px}
+@media (prefers-reduced-motion:no-preference){ .btn,.seg button,.drop{transition:background-color .15s,color .15s} }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="specimen" aria-hidden="true"><span class="key" id="specKey">f'k{kk</span><span class="arrow">⇄</span><span class="glyph" id="specGlyph">शिक्षा</span></p>
+    <h1>Kruti Dev ↔ Unicode converter</h1>
+    <p class="lede">Convert Hindi text, or whole Word and Excel files, in either direction. Files are processed on this device and never uploaded.</p>
+  </header>
+
+  <section class="controls" aria-label="Conversion settings">
+    <div>
+      <p class="dir-label" id="dirLabel">Direction</p>
+      <div class="seg" role="group" aria-labelledby="dirLabel">
+        <button type="button" id="dirK2U" aria-pressed="true">Kruti Dev → Unicode</button>
+        <button type="button" id="dirU2K" aria-pressed="false">Unicode → Kruti Dev</button>
+      </div>
+    </div>
+    <div class="opts">
+      <label>Font for converted text <input type="text" id="font" value="Utsaah" autocomplete="off"></label>
+      <label>Size change (pt) <input type="number" id="delta" value="0" step="0.5" min="-10" max="10"></label>
+      <label class="check"><input type="checkbox" id="engDigits" checked> Use English digits (0–9) instead of ०–९</label>
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Input type">
+    <button role="tab" id="tabText" aria-selected="true" aria-controls="paneText">Text</button>
+    <button role="tab" id="tabFile" aria-selected="false" aria-controls="paneFile">Word / Excel file</button>
+  </nav>
+
+  <section id="paneText" role="tabpanel" aria-labelledby="tabText">
+    <div class="panes">
+      <div class="pane">
+        <div class="pane-head"><label for="inText" id="inLabel">Kruti Dev text</label><span id="inCount">0 / 50,000</span></div>
+        <textarea id="inText" class="latin" maxlength="50000" spellcheck="false" placeholder="Paste Kruti Dev text here, e.g. dk;kZy; ftyk csfld f'k{kk vf/kdkjh"></textarea>
+      </div>
+      <div class="pane">
+        <div class="pane-head"><label for="outText" id="outLabel">Unicode text</label><span></span></div>
+        <textarea id="outText" readonly spellcheck="false"></textarea>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn" id="btnConvert" type="button">Convert text</button>
+      <button class="btn ghost" id="btnCopy" type="button">Copy result</button>
+      <button class="btn ghost" id="btnClear" type="button">Clear</button>
+    </div>
+    <p class="hint" id="textHint">Converts as you type. In this direction every character is treated as Kruti Dev, so leave out English words.</p>
+  </section>
+
+  <section id="paneFile" role="tabpanel" aria-labelledby="tabFile" hidden>
+    <label class="drop" id="drop" for="fileInput" aria-describedby="dropHelp">
+      <strong>Choose a .docx or .xlsx file</strong>
+      <span id="dropHelp">or drop it here (up to 10 MB)</span>
+    </label>
+    <input type="file" id="fileInput" accept=".docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="vh">
+    <div class="fileinfo" id="fileInfo"><div class="name" id="fileName"></div><div class="meta" id="fileMeta"></div></div>
+    <div class="row">
+      <button class="btn" id="btnFile" type="button" disabled>Convert and download</button>
+    </div>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+    <p class="hint" id="fileHint">Only text set in a Kruti Dev font is converted. English text in other fonts, tables, layout and page setup are kept as they are.</p>
+  </section>
+
+  <section class="notes" aria-label="Notes">
+    <p>Proofread names and rare conjuncts (क्ष, त्र, ज्ञ, द्ध) after converting. Old .doc and .xls files must first be saved as .docx or .xlsx.</p>
+    <p>Kruti Dev output looks like English letters on screen. It shows as Hindi once the Kruti Dev 010 font is applied in Word or Excel.</p>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+// ---- Kruti Dev 010 <-> Unicode conversion core ----
+const REPH = "\uE000";
+// [kruti, unicode] pairs. Order matters only for reverse preference (first wins).
+const PAIRS = [
+  // vowels
+  ["vkS","औ"],["vks","ओ"],["vkW","ऑ"],["v‚","ऑ"],["vk","आ"],["v","अ"],
+  ["b±","ईं"],["bZ","ई"],["Ã","ई"],["b","इ"],["m","उ"],["Å","ऊ"],["_","ऋ"],[",s","ऐ"],[",","ए"],
+  // special conjuncts
+  ["{k","क्ष"],["{","क्ष्"],["=","त्र"],["«","त्र्"],["K","ज्ञ"],["J","श्र"],
+  ["Ùk","त्त"],["Ù","त्त्"],[")","द्ध"],["|","द्य"],["}","द्व"],["í","द्द"],
+  ["ô","क्क"],["ä","क्त"],["é","न्न"],["™","न्न्"],["#","रु"],[":","रू"],
+  ["Vª","ट्र"],["Mª","ड्र"],["Nª","छ्र"],["Ø","क्र"],["ç","प्र"],["æ","द्र"],["Ý","फ्र"],
+  ["à","ह्न"],["á","ह्य"],["â","हृ"],["ã","ह्म"],["º","ह्"],
+  ["–","दृ"],["—","कृ"],["ê","ट्ट"],["ë","ट्ठ"],["ì","ड्ड"],["ï","ड्ढ"],
+  // consonants (full via half + k stem)
+  ["d","क"],["Dk","क"],["D","क्"],
+  ["[k","ख"],["[","ख्"],
+  ["x","ग"],["Xk","ग"],["X","ग्"],
+  ["?k","घ"],["Ä","घ"],["?","घ्"],["³","ङ"],
+  ["p","च"],["Pk","च"],["P","च्"],["N","छ"],
+  ["t","ज"],["Tk","ज"],["T","ज्"],[">","झ"],["÷","झ्"],["¥","ञ"],
+  ["V","ट"],["B","ठ"],["M","ड"],["<","ढ"],[".k","ण"],[".","ण्"],
+  ["r","त"],["Rk","त"],["R","त्"],["Fk","थ"],["F","थ्"],["n","द"],
+  ["/k","ध"],["èk","ध"],["/","ध्"],["è","ध्"],
+  ["u","न"],["Uk","न"],["U","न्"],
+  ["i","प"],["Ik","प"],["I","प्"],["Q","फ"],["¶","फ्"],
+  ["c","ब"],["Ck","ब"],["C","ब्"],["Hk","भ"],["H","भ्"],
+  ["e","म"],["Ek","म"],["E","म्"],
+  [";","य"],["¸","य्"],["j","र"],["y","ल"],["Yk","ल"],["Y","ल्"],["G","ळ"],
+  ["o","व"],["Ok","व"],["O","व्"],
+  ["'k","श"],["'","श्"],['"k',"ष"],['"',"ष्"],
+  ["l","स"],["Lk","स"],["L","स्"],["g","ह"],
+  // matras & signs
+  ["ks","ो"],["kS","ौ"],["kW","ॉ"],["‚","ॉ"],["k","ा"],["f","ि"],["h","ी"],["È","ीं"],
+  ["q","ु"],["w","ू"],["`","ृ"],["s","े"],["S","ै"],["W","ॅ"],
+  ["a","ं"],["¡","ँ"],["%","ः"],["z","्र"],["ª","्र"],["~","्"],["+","़"],["Z",REPH],
+  // punctuation & digits
+  ["A","।"],["-","."],["&","-"],["]",","],["\\","?"],["@","/"],["(",";"],["¼","("],["½",")"],
+  ["^","‘"],["*","’"],["Þ","“"],["ß","”"],["•","ऽ"],["ñ","॰"],
+  ["å","०"],["ƒ","१"],["„","२"],["…","३"],["†","४"],["‡","५"],["ˆ","६"],["‰","७"],["Š","८"],["‹","९"],
+];
+
+function buildMap(pairs, rev) {
+  const m = new Map(); let max = 1;
+  for (const [k, u] of pairs) {
+    const key = rev ? u : k, val = rev ? k : u;
+    if (key === REPH) continue;
+    if (!m.has(key)) m.set(key, val);
+    if (key.length > max) max = key.length;
+  }
+  return { m, max };
+}
+const K2U = buildMap(PAIRS, false);
+// Reverse: skip pairs that are only alternate Kruti spellings
+const U2K = buildMap(PAIRS.filter(([k]) => !["Dk","Xk","Pk","Tk","Rk","Uk","Ik","Ck","Ek","Yk","Ok","Lk","Ã","Ä","èk","è","v‚","‚","ª","Ø","ç","æ","Ý","º","â","–","—"].includes(k)), true);
+
+U2K.m.set(":","%"); U2K.m.set("'","*"); U2K.m.set('"',"ß");
+function greedy(text, tbl) {
+  let out = "";
+  for (let i = 0; i < text.length;) {
+    let hit = false;
+    for (let L = Math.min(tbl.max, text.length - i); L > 0; L--) {
+      const s = text.substr(i, L);
+      if (tbl.m.has(s)) { out += tbl.m.get(s); i += L; hit = true; break; }
+    }
+    if (!hit) { out += text[i]; i++; }
+  }
+  return out;
+}
+
+const C = "[\u0915-\u0939\u0958-\u095F]\u093C?";
+const CLUSTER = `(?:${C}\u094D)*${C}`;
+const MATRAS = "[\u093E-\u094C\u0962\u0963\u0901\u0902\u0903]";
+
+function krutiToUnicode(t) {
+  if (!t) return t;
+  let u = greedy(t, K2U);
+  u = u.replace(/\u094D\u093E/g, "");                              // half + stem = full
+  u = u.replace(new RegExp(`\u093F(${CLUSTER})`, "g"), "$1\u093F"); // chhoti i after cluster
+  u = u.replace(new RegExp(`(${CLUSTER})(${MATRAS}*)${REPH}`, "g"), "र्$1$2"); // reph
+  u = u.replace(new RegExp(REPH, "g"), "र्");
+  u = u.replace(/\u093E\u0947/g, "ो").replace(/\u093E\u0948/g, "ौ");
+  return u.normalize("NFC");
+}
+
+function unicodeToKruti(t) {
+  if (!t) return t;
+  let u = t.normalize("NFD");
+  // reph: र् + cluster + matras -> cluster + matras + Z
+  u = u.replace(new RegExp(`र्(${CLUSTER})([\u093E-\u094C]*)([\u0901\u0902]?)`, "g"), `$1$2${REPH}$3`);
+  // chhoti i before cluster
+  u = u.replace(new RegExp(`(${CLUSTER})\u093F`, "g"), "\u093F$1");
+  // generic rakar for consonants without special glyph: handled in tokenizer
+  let out = "";
+  for (let i = 0; i < u.length;) {
+    if (u[i] === REPH) { out += "Z"; i++; continue; }
+    let hit = false;
+    for (let L = Math.min(U2K.max, u.length - i); L > 2; L--) {
+      const s = u.substr(i, L);
+      if (U2K.m.has(s)) { out += U2K.m.get(s); i += L; hit = true; break; }
+    }
+    if (hit) continue;
+    // consonant (+nukta) + ्र  -> base + z
+    const m = u.slice(i).match(RAKAR);
+    if (m) { out += greedy(m[1], U2K) + "z"; i += m[0].length; continue; }
+    for (let L = 2; L > 0; L--) {
+      const s = u.substr(i, L);
+      if (s.length === L && U2K.m.has(s)) { out += U2K.m.get(s); i += L; hit = true; break; }
+    }
+    if (hit) continue;
+    const ch = u[i];
+    // consonant without half glyph followed by halant
+    if (/[\u0915-\u0939]/.test(ch) && u[i + 1] === "\u094D") { out += (U2K.m.get(ch) || ch) + "~"; i += 2; continue; }
+    out += ch; i++;
+  }
+  return out;
+}
+
+const RAKAR = new RegExp(`^(${C})\u094D\u0930`);
+const DEV_RE = /[\u0900-\u097F]/;
+// Split mixed Unicode text into [{hindi:bool, text}] so English/numbers keep original font
+function splitMixed(t) {
+  const parts = []; const re = /[A-Za-z0-9][A-Za-z0-9\-\/\.,:()@&_%+'"]*(?:\s+[A-Za-z0-9][A-Za-z0-9\-\/\.,:()@&_%+'"]*)*/g;
+  let last = 0, m;
+  while ((m = re.exec(t))) {
+    if (m.index > last) parts.push({ hindi: true, text: t.slice(last, m.index) });
+    parts.push({ hindi: false, text: m[0] }); last = m.index + m[0].length;
+  }
+  if (last < t.length) parts.push({ hindi: true, text: t.slice(last) });
+  // a "hindi" chunk with no Devanagari (only spaces/punct) stays as-is with original font
+  return parts.map(p => (p.hindi && !DEV_RE.test(p.text) ? { hindi: false, text: p.text } : p));
+}
+
+
+
+// ---- Office file processing (DOCX / XLSX) ----
+const W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+const S = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+const XMLNS = "http://www.w3.org/XML/1998/namespace";
+const KRUTI_RE = /kruti\s*dev|devlys/i;
+
+function parseXml(str) {
+  const d = new DOMParser().parseFromString(str, "application/xml");
+  if (d.getElementsByTagName("parsererror").length) throw new Error("A part of the file could not be read (damaged XML).");
+  return d;
+}
+function serialize(doc, original) {
+  let s = new XMLSerializer().serializeToString(doc);
+  const decl = original.match(/^\s*<\?xml[^>]*\?>/);
+  if (decl && !/^\s*<\?xml/.test(s)) s = decl[0].trim() + "\n" + s;
+  return s;
+}
+const kids = (el, ns, name) => Array.from(el.childNodes).filter(n => n.nodeType === 1 && n.namespaceURI === ns && n.localName === name);
+const kid = (el, ns, name) => kids(el, ns, name)[0] || null;
+const wval = (el) => el ? (el.getAttributeNS(W, "val") ?? el.getAttribute("w:val")) : null;
+const isOn = (el) => !!el && !["0", "false", "off"].includes(String(wval(el) ?? "true"));
+
+// ---------- Word styles ----------
+function readRPr(rPr) {
+  const o = {};
+  if (!rPr) return o;
+  const f = kid(rPr, W, "rFonts");
+  if (f) {
+    const a = f.getAttributeNS(W, "ascii") || f.getAttributeNS(W, "hAnsi");
+    if (a) o.font = a;
+    else if (f.getAttributeNS(W, "asciiTheme")) o.font = "(theme)";
+  }
+  const sz = kid(rPr, W, "sz"), szCs = kid(rPr, W, "szCs");
+  if (sz) o.sz = +wval(sz);
+  if (szCs) o.szCs = +wval(szCs);
+  const b = kid(rPr, W, "b"), bCs = kid(rPr, W, "bCs"), i = kid(rPr, W, "i"), iCs = kid(rPr, W, "iCs");
+  if (b) o.b = isOn(b);
+  if (bCs) o.bCs = isOn(bCs);
+  if (i) o.i = isOn(i);
+  if (iCs) o.iCs = isOn(iCs);
+  return o;
+}
+function parseWordStyles(xml) {
+  const st = { map: new Map(), defaults: {}, defPara: null };
+  if (!xml) return st;
+  const d = parseXml(xml);
+  const dd = d.getElementsByTagNameNS(W, "rPrDefault")[0];
+  if (dd) st.defaults = readRPr(kid(dd, W, "rPr"));
+  for (const s of Array.from(d.getElementsByTagNameNS(W, "style"))) {
+    const id = s.getAttributeNS(W, "styleId");
+    const based = kid(s, W, "basedOn");
+    st.map.set(id, { type: s.getAttributeNS(W, "type"), basedOn: based ? wval(based) : null, r: readRPr(kid(s, W, "rPr")) });
+    if (s.getAttributeNS(W, "type") === "paragraph" && s.getAttributeNS(W, "default") === "1") st.defPara = id;
+  }
+  return st;
+}
+function styleProp(st, id, prop, depth = 0) {
+  while (id && depth < 20) {
+    const s = st.map.get(id); if (!s) return undefined;
+    if (s.r[prop] !== undefined) return s.r[prop];
+    id = s.basedOn; depth++;
+  }
+  return undefined;
+}
+function effective(st, run, prop) {
+  const rPr = kid(run, W, "rPr");
+  const own = readRPr(rPr);
+  if (own[prop] !== undefined) return own[prop];
+  const rs = rPr && kid(rPr, W, "rStyle");
+  if (rs) { const v = styleProp(st, wval(rs), prop); if (v !== undefined) return v; }
+  let p = run.parentNode; while (p && !(p.namespaceURI === W && p.localName === "p")) p = p.parentNode;
+  let pid = st.defPara;
+  if (p) { const pPr = kid(p, W, "pPr"); const ps = pPr && kid(pPr, W, "pStyle"); if (ps) pid = wval(ps); }
+  const v = styleProp(st, pid, prop); if (v !== undefined) return v;
+  return st.defaults[prop];
+}
+
+const RPR_ORDER = ["rStyle","rFonts","b","bCs","i","iCs","caps","smallCaps","strike","dstrike","outline","shadow","emboss","imprint","noProof","snapToGrid","vanish","webHidden","color","spacing","w","kern","position","sz","szCs","highlight","u","effect","bdr","shd","fitText","vertAlign","rtl","cs","em","lang","eastAsianLayout","specVanish","oMath"];
+function ensureEl(parent, ns, name, order) {
+  let el = kid(parent, ns, name);
+  if (el) return el;
+  el = parent.ownerDocument.createElementNS(ns, (ns === W ? "w:" : "") + name);
+  const idx = order.indexOf(name);
+  const before = Array.from(parent.childNodes).find(n => n.nodeType === 1 && order.indexOf(n.localName) > idx);
+  parent.insertBefore(el, before || null);
+  return el;
+}
+function ensureRPr(run) {
+  let rPr = kid(run, W, "rPr");
+  if (!rPr) { rPr = run.ownerDocument.createElementNS(W, "w:rPr"); run.insertBefore(rPr, run.firstChild); }
+  return rPr;
+}
+function setW(el, attr, v) { el.setAttributeNS(W, "w:" + attr, String(v)); }
+
+function applyWordFont(run, st, font, deltaPt, toUnicode) {
+  // read effective values BEFORE changing anything
+  const own = readRPr(kid(run, W, "rPr"));
+  const pick = (a, b) => toUnicode ? (own[a] ?? effective(st, run, a)) : (own[b] ?? own[a] ?? effective(st, run, b) ?? effective(st, run, a));
+  const sz = pick("sz", "szCs"), bold = pick("b", "bCs"), ital = pick("i", "iCs");
+  const rPr = ensureRPr(run);
+  const f = ensureEl(rPr, W, "rFonts", RPR_ORDER);
+  ["asciiTheme","hAnsiTheme","cstheme","eastAsiaTheme"].forEach(a => f.removeAttributeNS(W, a));
+  ["ascii","hAnsi","cs","eastAsia"].forEach(a => setW(f, a, font));
+  const base = sz || 22, ns = Math.max(2, Math.round(base + deltaPt * 2));
+  if (sz || deltaPt) { setW(ensureEl(rPr, W, "sz", RPR_ORDER), "val", ns); setW(ensureEl(rPr, W, "szCs", RPR_ORDER), "val", ns); }
+  if (bold) { ensureEl(rPr, W, "b", RPR_ORDER); ensureEl(rPr, W, "bCs", RPR_ORDER); }
+  if (ital) { ensureEl(rPr, W, "i", RPR_ORDER); ensureEl(rPr, W, "iCs", RPR_ORDER); }
+  if (toUnicode) setW(ensureEl(rPr, W, "lang", RPR_ORDER), "bidi", "hi-IN");
+}
+
+function simpleRun(r) { // only rPr + text nodes
+  return Array.from(r.childNodes).every(n => n.nodeType !== 1 || (n.namespaceURI === W && (n.localName === "rPr" || n.localName === "t")));
+}
+function runText(r) { return kids(r, W, "t").map(t => t.textContent).join(""); }
+function setRunText(r, text) {
+  const ts = kids(r, W, "t");
+  let t = ts[0];
+  if (!t) { t = r.ownerDocument.createElementNS(W, "w:t"); r.appendChild(t); }
+  ts.slice(1).forEach(x => x.remove());
+  t.textContent = text;
+  t.setAttributeNS(XMLNS, "xml:space", "preserve");
+}
+const rPrKey = (r) => { const p = kid(r, W, "rPr"); return p ? new XMLSerializer().serializeToString(p) : ""; };
+
+function cleanAndMerge(doc) {
+  ["proofErr", "lastRenderedPageBreak"].forEach(n => Array.from(doc.getElementsByTagNameNS(W, n)).forEach(e => e.remove()));
+  const runs = Array.from(doc.getElementsByTagNameNS(W, "r"));
+  for (const r of runs) {
+    if (!r.parentNode || !simpleRun(r)) continue;
+    let prev = r.previousSibling;
+    while (prev && prev.nodeType !== 1) prev = prev.previousSibling;
+    if (prev && prev.namespaceURI === W && prev.localName === "r" && simpleRun(prev) && rPrKey(prev) === rPrKey(r)) {
+      setRunText(prev, runText(prev) + runText(r));
+      r.remove();
+    }
+  }
+}
+
+async function processDocx(zip, o) {
+  const stylesFile = zip.file("word/styles.xml");
+  const st = parseWordStyles(stylesFile ? await stylesFile.async("string") : null);
+  const parts = Object.keys(zip.files).filter(n => /^word\/(document|header\d*|footer\d*|footnotes|endnotes)\.xml$/.test(n));
+  const stats = { units: 0 };
+  for (const name of parts) {
+    const xml = await zip.file(name).async("string");
+    const doc = parseXml(xml);
+    cleanAndMerge(doc);
+    const runs = Array.from(doc.getElementsByTagNameNS(W, "r"));
+    let changed = false;
+    for (const r of runs) {
+      const ts = kids(r, W, "t");
+      if (!ts.length) continue;
+      if (o.toUnicode) {
+        const f = effective(st, r, "font");
+        if (!f || !KRUTI_RE.test(f)) continue;
+        applyWordFont(r, st, o.font, o.delta, true);
+        ts.forEach(t => { t.textContent = o.post(krutiToUnicode(t.textContent)); t.setAttributeNS(XMLNS, "xml:space", "preserve"); });
+        stats.units++; changed = true;
+      } else {
+        const text = runText(r);
+        if (!DEV_RE.test(text)) continue;
+        if (simpleRun(r)) {
+          const segs = splitMixed(text);
+          for (const sgm of segs) {
+            const nr = r.cloneNode(true);
+            setRunText(nr, sgm.hindi ? o.post(unicodeToKruti(sgm.text)) : sgm.text);
+            if (sgm.hindi) applyWordFont(nr, st, o.font, o.delta, false);
+            r.parentNode.insertBefore(nr, r);
+          }
+          r.remove();
+        } else {
+          ts.forEach(t => { t.textContent = o.post(unicodeToKruti(t.textContent)); t.setAttributeNS(XMLNS, "xml:space", "preserve"); });
+          applyWordFont(r, st, o.font, o.delta, false);
+        }
+        stats.units++; changed = true;
+      }
+    }
+    if (changed) zip.file(name, serialize(doc, xml));
+  }
+  return stats;
+}
+
+// ---------- Excel ----------
+async function processXlsx(zip, o) {
+  const stylesPath = "xl/styles.xml", sstPath = "xl/sharedStrings.xml";
+  const stylesXml = zip.file(stylesPath) ? await zip.file(stylesPath).async("string") : null;
+  if (!stylesXml) throw new Error("This workbook has no style information, so fonts cannot be detected.");
+  const sd = parseXml(stylesXml);
+  const fontsEl = sd.getElementsByTagNameNS(S, "fonts")[0];
+  const fonts = fontsEl ? kids(fontsEl, S, "font") : [];
+  const fontName = (f) => { const n = kid(f, S, "name"); return n ? n.getAttribute("val") : ""; };
+  const xfsEl = sd.getElementsByTagNameNS(S, "cellXfs")[0];
+  const xfFont = xfsEl ? kids(xfsEl, S, "xf").map(x => +(x.getAttribute("fontId") || 0)) : [0];
+
+  const sstXml = zip.file(sstPath) ? await zip.file(sstPath).async("string") : null;
+  const sd2 = sstXml ? parseXml(sstXml) : null;
+  const sst = sd2 ? sd2.documentElement : null;
+  let sis = sst ? kids(sst, S, "si") : [];
+  const sheetNames = Object.keys(zip.files).filter(n => /^xl\/worksheets\/[^/]+\.xml$/.test(n));
+  const sheets = [];
+  for (const n of sheetNames) { const x = await zip.file(n).async("string"); sheets.push({ n, x, d: parseXml(x), changed: false }); }
+  const stats = { units: 0 };
+  const mkT = (doc, text) => { const t = doc.createElementNS(S, "t"); t.textContent = text; if (/^\s|\s$/.test(text)) t.setAttributeNS(XMLNS, "xml:space", "preserve"); return t; };
+  const textNodesOf = (container) => { // direct t, or t within r (skip phonetic rPh)
+    const out = [];
+    for (const c of Array.from(container.childNodes)) {
+      if (c.nodeType !== 1) continue;
+      if (c.localName === "t") out.push({ t: c, rFont: null, r: null });
+      else if (c.localName === "r") { const rp = kid(c, S, "rPr"); const rf = rp && kid(rp, S, "rFont"); out.push({ t: kid(c, S, "t"), rFont: rf ? rf.getAttribute("val") : null, r: c }); }
+    }
+    return out.filter(x => x.t);
+  };
+  const retargetRunFont = (r) => {
+    const rp = kid(r, S, "rPr"); const rf = kid(rp, S, "rFont"); rf.setAttribute("val", o.font);
+    const sz = kid(rp, S, "sz"); if (sz && o.delta) sz.setAttribute("val", Math.max(1, +sz.getAttribute("val") + o.delta));
+    ["charset", "scheme"].forEach(n => { const e = kid(rp, S, n); if (e) e.remove(); });
+  };
+
+  if (o.toUnicode) {
+    const kFonts = new Set(fonts.map((f, i) => KRUTI_RE.test(fontName(f)) ? i : -1).filter(i => i >= 0));
+    const kXf = (s) => kFonts.has(xfFont[s] ?? 0);
+    const kCells = new Map(), nIdx = new Set();
+    for (const sh of sheets) {
+      for (const c of Array.from(sh.d.getElementsByTagNameNS(S, "c"))) {
+        const s = +(c.getAttribute("s") || 0), t = c.getAttribute("t");
+        if (t === "s") {
+          const v = kid(c, S, "v"); if (!v) continue; const idx = +v.textContent;
+          if (kXf(s)) { if (!kCells.has(idx)) kCells.set(idx, []); kCells.get(idx).push({ c, v, sh }); } else nIdx.add(idx);
+        } else if (t === "inlineStr" && kXf(s)) {
+          const is = kid(c, S, "is"); if (!is) continue;
+          for (const x of textNodesOf(is)) if (!x.rFont || KRUTI_RE.test(x.rFont)) { x.t.textContent = o.post(krutiToUnicode(x.t.textContent)); if (x.rFont) retargetRunFont(x.r); }
+          sh.changed = true; stats.units++;
+        }
+      }
+    }
+    const converted = new Set();
+    for (const [idx, cells] of kCells) {
+      let si = sis[idx]; if (!si) continue;
+      let useIdx = idx;
+      if (nIdx.has(idx)) { // string shared with non-Kruti cells: copy it
+        const copy = si.cloneNode(true); sst.appendChild(copy); sis.push(copy); useIdx = sis.length - 1; si = copy;
+        cells.forEach(({ v, sh }) => { v.textContent = String(useIdx); sh.changed = true; });
+      }
+      for (const x of textNodesOf(si)) if (!x.rFont || KRUTI_RE.test(x.rFont)) { x.t.textContent = o.post(krutiToUnicode(x.t.textContent)); if (x.rFont) retargetRunFont(x.r); }
+      converted.add(useIdx); stats.units += cells.length;
+    }
+    // rich-text runs explicitly in Kruti inside any other string
+    sis.forEach((si, i) => {
+      if (converted.has(i)) return;
+      for (const x of textNodesOf(si)) if (x.rFont && KRUTI_RE.test(x.rFont)) { x.t.textContent = o.post(krutiToUnicode(x.t.textContent)); retargetRunFont(x.r); stats.units++; }
+    });
+    kFonts.forEach(i => {
+      const f = fonts[i]; kid(f, S, "name").setAttribute("val", o.font);
+      const sz = kid(f, S, "sz"); if (sz && o.delta) sz.setAttribute("val", Math.max(1, +sz.getAttribute("val") + o.delta));
+      ["charset", "scheme"].forEach(n => { const e = kid(f, S, n); if (e) e.remove(); });
+    });
+    if (kFonts.size) zip.file(stylesPath, serialize(sd, stylesXml));
+  } else {
+    // Unicode -> Kruti: rebuild Devanagari strings as rich text (Hindi parts in Kruti, English parts unchanged)
+    const fontToRPr = (doc, fi) => {
+      const rp = doc.createElementNS(S, "rPr"); const f = fonts[fi];
+      if (f) for (const ch of Array.from(f.childNodes)) {
+        if (ch.nodeType !== 1) continue;
+        const e = doc.createElementNS(S, ch.localName === "name" ? "rFont" : ch.localName);
+        for (const a of Array.from(ch.attributes)) e.setAttribute(a.name, a.value);
+        rp.appendChild(e);
+      }
+      return rp;
+    };
+    const buildRuns = (doc, container, fi) => {
+      const parts = [];
+      for (const x of textNodesOf(container)) {
+        const base = x.r && kid(x.r, S, "rPr") ? kid(x.r, S, "rPr") : fontToRPr(doc, fi);
+        for (const sg of splitMixed(x.t.textContent)) parts.push({ base, sg });
+      }
+      const runs = [];
+      for (const { base, sg } of parts) {
+        const r = doc.createElementNS(S, "r"); const rp = base.cloneNode(true);
+        if (sg.hindi) {
+          let rf = kid(rp, S, "rFont"); if (!rf) { rf = doc.createElementNS(S, "rFont"); rp.insertBefore(rf, rp.firstChild); }
+          rf.setAttribute("val", o.font);
+          const sz = kid(rp, S, "sz"); if (sz && o.delta) sz.setAttribute("val", Math.max(1, +sz.getAttribute("val") + o.delta));
+          ["charset", "scheme"].forEach(n => { const e = kid(rp, S, n); if (e) e.remove(); });
+        }
+        r.appendChild(rp); r.appendChild(mkT(doc, sg.hindi ? o.post(unicodeToKruti(sg.text)) : sg.text));
+        runs.push(r);
+      }
+      return runs;
+    };
+    const made = new Map();
+    for (const sh of sheets) {
+      for (const c of Array.from(sh.d.getElementsByTagNameNS(S, "c"))) {
+        const s = +(c.getAttribute("s") || 0), t = c.getAttribute("t"), fi = xfFont[s] ?? 0;
+        if (t === "s" && sst) {
+          const v = kid(c, S, "v"); if (!v) continue; const idx = +v.textContent; const si = sis[idx];
+          if (!si || !DEV_RE.test(si.textContent)) continue;
+          const key = idx + "|" + fi;
+          if (!made.has(key)) {
+            const nsi = sd2.createElementNS(S, "si");
+            buildRuns(sd2, si, fi).forEach(r => nsi.appendChild(r));
+            sst.appendChild(nsi); sis.push(nsi); made.set(key, sis.length - 1);
+          }
+          v.textContent = String(made.get(key)); sh.changed = true; stats.units++;
+        } else if (t === "inlineStr") {
+          const is = kid(c, S, "is"); if (!is || !DEV_RE.test(is.textContent)) continue;
+          const runs = buildRuns(sh.d, is, fi);
+          while (is.firstChild) is.removeChild(is.firstChild);
+          runs.forEach(r => is.appendChild(r)); sh.changed = true; stats.units++;
+        }
+      }
+    }
+  }
+  if (sst) { sst.setAttribute("uniqueCount", String(sis.length)); zip.file(sstPath, serialize(sd2, sstXml)); }
+  for (const sh of sheets) if (sh.changed) zip.file(sh.n, serialize(sh.d, sh.x));
+  return stats;
+}
+
+// ---- UI ----
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const MAX_FILE = 10 * 1024 * 1024, MAX_TEXT = 50000;
+  let toUnicode = true, file = null;
+  const DIGITS_HI = "०१२३४५६७८९";
+  const engDigits = (s) => s.replace(/[०-९]/g, d => String(DIGITS_HI.indexOf(d)));
+  const post = () => ($("engDigits").checked ? engDigits : (s) => s);
+
+  function setDir(u) {
+    toUnicode = u;
+    $("dirK2U").setAttribute("aria-pressed", String(u));
+    $("dirU2K").setAttribute("aria-pressed", String(!u));
+    const f = $("font").value.trim();
+    if (u && (!f || KRUTI_RE.test(f))) $("font").value = "Utsaah";
+    if (!u && (!f || !KRUTI_RE.test(f))) $("font").value = "Kruti Dev 010";
+    $("inLabel").textContent = u ? "Kruti Dev text" : "Unicode text";
+    $("outLabel").textContent = u ? "Unicode text" : "Kruti Dev text";
+    $("inText").className = u ? "latin" : "";
+    $("outText").className = u ? "" : "latin";
+    $("inText").placeholder = u ? "Paste Kruti Dev text here, e.g. dk;kZy; ftyk csfld f'k{kk vf/kdkjh" : "यहाँ यूनिकोड हिंदी पेस्ट करें, जैसे कार्यालय जिला बेसिक शिक्षा अधिकारी";
+    $("textHint").textContent = u
+      ? "Converts as you type. In this direction every character is treated as Kruti Dev, so leave out English words."
+      : "Converts as you type. English words and numbers are left as they are.";
+    $("fileHint").textContent = u
+      ? "Only text set in a Kruti Dev font is converted. English text in other fonts, tables, layout and page setup are kept as they are."
+      : "Only Hindi (Devanagari) text is converted and set to the Kruti Dev font. English words and numbers keep their original font.";
+    // swap text so the result can be converted back
+    const out = $("outText").value;
+    if (out) $("inText").value = out;
+    convertText();
+    clearStatus();
+  }
+  $("dirK2U").onclick = () => toUnicode || setDir(true);
+  $("dirU2K").onclick = () => !toUnicode || setDir(false);
+
+  // tabs
+  function setTab(text) {
+    $("tabText").setAttribute("aria-selected", String(text));
+    $("tabFile").setAttribute("aria-selected", String(!text));
+    $("paneText").hidden = !text; $("paneFile").hidden = text;
+  }
+  $("tabText").onclick = () => setTab(true);
+  $("tabFile").onclick = () => setTab(false);
+  document.querySelector(".tabs").addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") { const t = $("tabText").getAttribute("aria-selected") === "true"; setTab(!t); (t ? $("tabFile") : $("tabText")).focus(); }
+  });
+
+  // text mode
+  function convertText() {
+    const v = $("inText").value.slice(0, MAX_TEXT);
+    $("inCount").textContent = `${v.length.toLocaleString("en-IN")} / 50,000`;
+    if (!v) { $("outText").value = ""; return; }
+    const p = post();
+    if (toUnicode) $("outText").value = p(krutiToUnicode(v));
+    else $("outText").value = v.split(/(\r?\n)/).map(line => splitMixed(line).map(s => s.hindi ? p(unicodeToKruti(s.text)) : s.text).join("")).join("");
+  }
+  let tmr; $("inText").addEventListener("input", () => { clearTimeout(tmr); tmr = setTimeout(convertText, 120); });
+  $("btnConvert").onclick = convertText;
+  $("engDigits").onchange = convertText;
+  $("btnClear").onclick = () => { $("inText").value = ""; convertText(); $("inText").focus(); };
+  $("btnCopy").onclick = async () => {
+    const t = $("outText").value; if (!t) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(t); ok = true; } catch (e) {
+      const ta = $("outText"); ta.removeAttribute("readonly"); ta.select(); try { ok = document.execCommand("copy"); } catch (_) {} ta.setAttribute("readonly", ""); window.getSelection().removeAllRanges();
+    }
+    const b = $("btnCopy"); b.textContent = ok ? "Copied" : "Select and copy manually"; setTimeout(() => (b.textContent = "Copy result"), 1600);
+  };
+
+  // file mode
+  const status = (msg, kind) => { const s = $("status"); s.textContent = msg; s.className = "status" + (kind ? " " + kind : ""); };
+  const clearStatus = () => status("");
+  const fmtSize = (n) => n < 1024 * 1024 ? (n / 1024).toFixed(0) + " KB" : (n / 1048576).toFixed(1) + " MB";
+  function pick(f) {
+    file = null; $("btnFile").disabled = true; clearStatus();
+    if (!f) return;
+    const ext = (f.name.split(".").pop() || "").toLowerCase();
+    $("fileInfo").classList.add("show"); $("fileName").textContent = f.name; $("fileMeta").textContent = fmtSize(f.size);
+    if (ext === "doc" || ext === "xls") return status("Old ." + ext + " format: open it in Word/Excel and save as ." + ext + "x first.", "err");
+    if (ext !== "docx" && ext !== "xlsx") return status("Choose a .docx or .xlsx file.", "err");
+    if (f.size > MAX_FILE) return status("This file is " + fmtSize(f.size) + ". The limit is 10 MB.", "err");
+    file = f; $("btnFile").disabled = false;
+  }
+  const drop = $("drop"), input = $("fileInput");
+
+  input.addEventListener("change", () => { pick(input.files[0]); });
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => pick(e.dataTransfer.files[0]));
+
+  async function saveBlob(name, blob) {
+    let dl = null;
+    try { if (window.claude && typeof window.claude.use === "function") dl = await Promise.race([window.claude.use("downloads"), new Promise(r => setTimeout(() => r(null), 4000))]); } catch (_) { dl = null; }
+    if (dl) {
+      try { await dl.save({ filename: name, data: blob }); return "saved"; }
+      catch (e) { if (e && e.code === "declined") return "declined"; if (e && e.code === "rate_limited") return "busy"; }
+    }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    return "saved";
+  }
+
+  $("btnFile").onclick = async () => {
+    if (!file) return;
+    if (typeof JSZip === "undefined") return status("The file reader did not load. Check the internet connection and reload the page.", "err");
+    const font = $("font").value.trim();
+    if (!font) return status("Enter a font name first.", "err");
+    const delta = parseFloat($("delta").value) || 0;
+    const btn = $("btnFile"); btn.disabled = true; status("Converting…");
+    try {
+      const zip = await JSZip.loadAsync(file);
+      const isDocx = !!zip.file("word/document.xml"), isXlsx = !!zip.file("xl/workbook.xml");
+      if (!isDocx && !isXlsx) throw new Error("This doesn't look like a Word or Excel file.");
+      const o = { toUnicode, font, delta, post: post() };
+      const stats = isDocx ? await processDocx(zip, o) : await processXlsx(zip, o);
+      if (!stats.units) {
+        status(toUnicode ? "No text in a Kruti Dev font was found, so nothing was changed." : "No Hindi (Unicode) text was found, so nothing was changed.", "err");
+        return;
+      }
+      const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", mimeType: isDocx ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const base = file.name.replace(/\.(docx|xlsx)$/i, "");
+      const outName = base + (toUnicode ? "_Unicode" : "_KrutiDev") + (isDocx ? ".docx" : ".xlsx");
+      const what = isDocx ? `${stats.units} text runs` : `${stats.units} cells`;
+      const r = await saveBlob(outName, blob);
+      if (r === "declined") status(`Converted ${what}. Download was cancelled; press the button again to save.`);
+      else if (r === "busy") status("A save prompt is already open. Finish it, then try again.", "err");
+      else status(`Converted ${what}. Saved as ${outName}.`, "ok");
+    } catch (e) {
+      console.error(e);
+      status("Could not convert this file: " + (e && e.message ? e.message : e), "err");
+    } finally { btn.disabled = !file; }
+  };
+
+  // rotating specimen
+  const specs = [["f'k{kk", "शिक्षा"], ["vkns'k", "आदेश"], ["fo|ky;", "विद्यालय"], ["/keZ", "धर्म"]];
+  let si = 0;
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(() => {
+    if (document.hidden) return; si = (si + 1) % specs.length;
+    $("specKey").textContent = specs[si][0]; $("specGlyph").textContent = specs[si][1];
+  }, 3200);
+
+  convertText();
+})();
+
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
