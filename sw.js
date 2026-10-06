@@ -1,5 +1,5 @@
 // Offline cache for Kruti Dev ↔ Unicode Converter. Bump VERSION after updating files.
-const VERSION = "kruti-v1";
+const VERSION = "kruti-v2";
 const CORE = [
   "./", "./index.html", "./manifest.json",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png",
